@@ -1,180 +1,144 @@
 package RailwayManagementSystem;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+
+import java.awt.*;
+import java.awt.event.*;
 import java.sql.SQLException;
 import java.util.ArrayList;
-
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
-
+import javax.swing.*;
 import Trips.BookTrip;
 import Trips.Trip;
 import Trips.TripsDatabase;
 
 public class Main {
-	
+
 	private static JFrame frame;
 	private static JPanel table;
 	private static GridLayout gridLayout;
-	private static Database Database;
+	private static Database database;
+
+	// Color scheme constants
+	private static final Color BACKGROUND_COLOR = Color.decode("#EBFFD8");
+	private static final Color DARK_ROW_COLOR = Color.decode("#012030");
+	private static final Color LIGHT_ROW_COLOR = Color.WHITE;
+	private static final Color DARK_TEXT_COLOR = Color.decode("#012030");
+	private static final Color LIGHT_TEXT_COLOR = Color.WHITE;
+	private static final Color BUTTON_COLOR = Color.decode("#45C4B0");  // Light teal
+	private static final Color HIGHLIGHT_COLOR = Color.decode("#136756");
 
 	public static void main(String[] args) throws SQLException {
-		
-		Database = new Database();
+		database = new Database();
 
 		frame = new JFrame("Railway Management System");
 		frame.setSize(1050, 650);
-		frame.getContentPane().setLayout(new BorderLayout());
-		frame.getContentPane().setBackground(Color.decode("#EBFFD8"));
+		frame.getContentPane().setBackground(BACKGROUND_COLOR);
+		frame.setLayout(new BorderLayout());
 		frame.setLocationRelativeTo(null);
-		
+
 		JPanel panel = new JPanel(new BorderLayout(20, 20));
 		panel.setBackground(null);
 		panel.setBorder(BorderFactory.createEmptyBorder(50, 40, 30, 40));
-		
+
+		// Title
 		JLabel title = new JLabel("Welcome to Railway Management System");
-		title.setForeground(Color.decode("#012030"));
+		title.setForeground(DARK_TEXT_COLOR);
 		title.setFont(new Font(null, Font.BOLD, 35));
 		title.setHorizontalAlignment(SwingConstants.CENTER);
 		panel.add(title, BorderLayout.NORTH);
-		
+
+		// Table setup
 		gridLayout = new GridLayout(6, 1);
 		table = new JPanel(gridLayout);
-		table.setBackground(Color.decode("#EBFFD8"));
-		
-		ArrayList<Trip> trips = TripsDatabase.getAllTrips(Database);
+		table.setBackground(BACKGROUND_COLOR);
+
+		ArrayList<Trip> trips = TripsDatabase.getAllTrips(database);
 		refreshTable(trips);
-		
+
 		JScrollPane sp = new JScrollPane(table);
 		panel.add(sp, BorderLayout.CENTER);
-		
+
+		// Modify Button - Black text on light teal
 		JButton modify = new JButton("Modify");
-		modify.setBackground(Color.decode("#45C4B0"));
-		modify.setForeground(Color.white);
+		modify.setForeground(Color.BLACK);  // Text color changed to BLACK
+		modify.setBackground(BUTTON_COLOR); // Background: #45C4B0 (light teal)
 		modify.setFont(new Font(null, Font.BOLD, 22));
-		modify.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				new ModifyList(frame, Database);
-			}
-		});
+		modify.setFocusPainted(false);
+		modify.addActionListener(e -> new ModifyList(frame, database));
 		panel.add(modify, BorderLayout.SOUTH);
-		
+
 		frame.add(panel, BorderLayout.CENTER);
 		frame.setVisible(true);
-		
 	}
-	
+
 	public static void refreshTable(ArrayList<Trip> trips) {
 		table.removeAll();
-		table.repaint();
-		table.revalidate();
-		int rows = trips.size() + 1;
-		if (rows<6) rows = 6;
+		int rows = Math.max(trips.size() + 1, 6);
 		gridLayout.setRows(rows);
-		table.add(row(0, null));
-		for (int i=0;i<trips.size();i++) {
-			JPanel trip = row(i+1, trips.get(i));
-			table.add(trip);
+		table.add(createTableRow(0, null));
+		for (int i = 0; i < trips.size(); i++) {
+			table.add(createTableRow(i + 1, trips.get(i)));
 		}
+		table.revalidate();
+		table.repaint();
 	}
-	
-	private static JPanel row(int index, Trip trip) {
-		JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
-		if (index%2==0) row.setBackground(Color.decode("#e5e5e5"));
-		else row.setBackground(Color.decode("#EEEEEE"));
-		
-		String trainS, startS, destS, dateS, deptS, arrS, priceS, statusS;
-		
-		if (trip!=null) {
-			trainS = trip.getTrain().getDescription();
-			startS = trip.getStart();
-			destS = trip.getDestination();
-			dateS = trip.getDate();
-			deptS = trip.getDepartureTime();
-			arrS = trip.getArrivalTime();
-			priceS = trip.getPrice()+" $";
-			statusS = "Booked";
-			if (trip.getTrain().getCapacity()>trip.getBookedSeats()) statusS = "Available";
-			row.setCursor(new Cursor(Cursor.HAND_CURSOR));
-			row.addMouseListener(new MouseListener() {
-				@Override
-				public void mouseReleased(MouseEvent e) {}
-				@Override
-				public void mousePressed(MouseEvent e) {}
-				@Override
-				public void mouseExited(MouseEvent e) {}
-				@Override
-				public void mouseEntered(MouseEvent e) {}
+
+	private static JPanel createTableRow(int index, Trip trip) {
+		JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 15));
+		boolean isHeader = index == 0;
+		boolean isEvenRow = index % 2 == 0;
+
+		Color bgColor = isHeader ? HIGHLIGHT_COLOR :
+				(isEvenRow ? DARK_ROW_COLOR : LIGHT_ROW_COLOR);
+		Color textColor = isHeader ? LIGHT_TEXT_COLOR :
+				(isEvenRow ? LIGHT_TEXT_COLOR : DARK_TEXT_COLOR);
+
+		row.setBackground(bgColor);
+		row.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+
+		if (trip != null) {
+			row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			row.addMouseListener(new MouseAdapter() {
 				@Override
 				public void mouseClicked(MouseEvent e) {
 					try {
-						new BookTrip(frame, Database, trip);
-					} catch (SQLException e1) {
-						JOptionPane.showMessageDialog(frame, e1.getMessage());
+						new BookTrip(frame, database, trip);
+					} catch (SQLException ex) {
+						JOptionPane.showMessageDialog(frame, ex.getMessage());
 					}
 				}
 			});
-		} else {
-			trainS = "Train";
-			startS = "From";
-			destS = "To";
-			dateS = "Date";
-			deptS = "Dept";
-			arrS = "Arr";
-			priceS = "Price";
-			statusS = "Status";
 		}
-		
-		JLabel train = JLabel(trainS, 100);
-		row.add(train);
-		
-		JLabel start = JLabel(startS, 100);
-		row.add(start);
-		
-		JLabel dest = JLabel(destS, 100);
-		row.add(dest);
-		
-		JLabel date = JLabel(dateS, 150);
-		row.add(date);
-		
-		JLabel deptTime = JLabel(deptS, 65);
-		row.add(deptTime);
-		
-		JLabel arrTime = JLabel(arrS, 65);
-		row.add(arrTime);
-		
-		JLabel price = JLabel(priceS, 70);
-		row.add(price);
-		
-		JLabel status = JLabel(statusS, 100);
-		row.add(status);
-		
+
+		String[] values = getRowValues(trip);
+		int[] widths = {100, 100, 100, 150, 65, 65, 70, 100};
+		for (int i = 0; i < values.length; i++) {
+			row.add(createLabel(values[i], widths[i], textColor));
+		}
+
 		return row;
 	}
-	
-	private static JLabel JLabel(String text, int width) {
+
+	private static String[] getRowValues(Trip trip) {
+		if (trip == null) {
+			return new String[]{"Train", "From", "To", "Date", "Dept", "Arr", "Price", "Status"};
+		}
+		return new String[]{
+				trip.getTrain().getDescription(),
+				trip.getStart(),
+				trip.getDestination(),
+				trip.getDate(),
+				trip.getDepartureTime(),
+				trip.getArrivalTime(),
+				trip.getPrice() + " $",
+				trip.getTrain().getCapacity() > trip.getBookedSeats() ? "Available" : "Booked"
+		};
+	}
+
+	private static JLabel createLabel(String text, int width, Color color) {
 		JLabel label = new JLabel(text);
 		label.setPreferredSize(new Dimension(width, 20));
 		label.setFont(new Font(null, Font.PLAIN, 20));
-		label.setForeground(Color.decode("#13678A"));
+		label.setForeground(color);
 		label.setHorizontalAlignment(SwingConstants.CENTER);
 		return label;
 	}
-
 }
